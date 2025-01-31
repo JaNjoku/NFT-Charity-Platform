@@ -62,3 +62,51 @@
     {user: principal, campaign-id: uint} 
     {amount: uint, timestamp: uint}
 )
+
+
+;; Read-only functions
+(define-read-only (get-token-uri (token-id uint))
+    (map-get? token-uri token-id)
+)
+
+(define-read-only (get-owner (token-id uint))
+    (map-get? nft-owners token-id)
+)
+
+(define-read-only (get-price (token-id uint))
+    (map-get? nft-price token-id)
+)
+
+(define-read-only (get-token-metadata (token-id uint))
+    (map-get? nft-metadata token-id)
+)
+
+(define-read-only (get-campaign-details (campaign-id uint))
+    (map-get? charity-campaigns campaign-id)
+)
+
+(define-read-only (get-user-donation-history (user principal) (campaign-id uint))
+    (map-get? user-donations {user: user, campaign-id: campaign-id})
+)
+
+;; Read-only functions for new features
+(define-read-only (get-campaign-nfts (campaign-id uint))
+    (map-get? campaign-nfts campaign-id)
+)
+
+(define-read-only (get-user-campaign-stats (user principal) (campaign-id uint))
+    (map-get? user-campaign-participation {user: user, campaign-id: campaign-id})
+)
+
+(define-read-only (get-campaign-milestone 
+    (campaign-id uint)
+    (milestone-id uint))
+    (map-get? campaign-milestones 
+        {campaign-id: campaign-id, 
+         milestone-id: milestone-id})
+)
+
+(define-read-only (get-user-rewards (user principal))
+    (map-get? user-rewards user)
+)
+
