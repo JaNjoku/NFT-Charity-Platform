@@ -126,3 +126,40 @@
     )
 )
 
+
+;; Public functions - NFT Core
+(define-public (mint (uri (string-utf8 256)) (category (string-utf8 64)))
+    (let ((token-id (+ (var-get total-nfts) u1)))
+        (begin
+            (asserts! (not (var-get paused)) (err u108))
+            (map-set nft-owners token-id tx-sender)
+            (map-set token-uri token-id uri)
+            (map-set nft-metadata token-id 
+                {creator: tx-sender,
+                 timestamp: block-height,
+                 category: category})
+            (var-set total-nfts token-id)
+            (ok token-id)
+        )
+    )
+)
+
+;; Public functions - NFT Trading
+(define-public (transfer (token-id uint) (recipient principal))
+    (let ((owner (unwrap! (map-get? nft-owners token-id) (err u1))))
+        (asserts! (is-eq tx-sender owner) err-not-token-owner)
+        (transfer-token token-id owner recipient)
+    )
+)
+
+(define-public (list-for-sale (token-id uint) (price uint))
+    (let ((owner (unwrap! (map-get? nft-owners token-id) (err u1))))
+        (begin
+            (asserts! (not (var-get paused)) (err u108))
+            (asserts! (is-eq tx-sender owner) err-not-token-owner)
+            (asserts! (> price u0) err-invalid-price)
+            (map-set nft-price token-id price)
+            (ok true)
+        )
+    )
+)
