@@ -163,3 +163,45 @@
         )
     )
 )
+
+
+;; Public functions - Charity Campaigns
+(define-public (create-charity-campaign 
+    (name (string-utf8 64))
+    (description (string-utf8 256))
+    (goal uint)
+    (duration uint))
+    (let ((campaign-id (+ (var-get campaign-counter) u1)))
+        (begin
+            (asserts! (is-eq tx-sender contract-owner) err-owner-only)
+            (asserts! (> goal u0) err-invalid-parameter)
+            (map-set charity-campaigns campaign-id
+                {name: name,
+                 description: description,
+                 goal: goal,
+                 raised: u0,
+                 deadline: (+ block-height duration),
+                 active: true})
+            (var-set campaign-counter campaign-id)
+            (ok campaign-id)
+        )
+    )
+)
+
+(define-public (donate-to-campaign (campaign-id uint) (amount uint))
+    (let ((campaign (unwrap! (map-get? charity-campaigns campaign-id) err-campaign-not-found)))
+        (begin
+            (asserts! (get active campaign) err-campaign-not-found)
+            (asserts! (<= block-height (get deadline campaign)) err-campaign-expired)
+            (try! (stx-transfer? amount tx-sender (var-get charity-address)))
+            (map-set charity-campaigns campaign-id
+                (merge campaign {raised: (+ (get raised campaign) amount)}))
+            (map-set user-donations 
+                {user: tx-sender, campaign-id: campaign-id}
+                {amount: amount, timestamp: block-height})
+            (var-set total-donations (+ (var-get total-donations) amount))
+            (ok true)
+        )
+    )
+)
+
