@@ -110,3 +110,19 @@
     (map-get? user-rewards user)
 )
 
+
+;; Private functions
+(define-private (check-owner (token-id uint) (acc uint))
+    (if (is-eq (some tx-sender) (map-get? nft-owners token-id))
+        (+ acc u1)
+        acc
+    )
+)
+
+(define-private (transfer-token (token-id uint) (sender principal) (recipient principal))
+    (begin
+        (map-set nft-owners token-id recipient)
+        (ok true)
+    )
+)
+
