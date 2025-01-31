@@ -205,3 +205,58 @@
     )
 )
 
+;; Public functions - Marketplace with Charity
+(define-public (buy-nft (token-id uint))
+    (let 
+        (
+            (price (unwrap! (map-get? nft-price token-id) err-invalid-price))
+            (owner (unwrap! (map-get? nft-owners token-id) err-not-token-owner))
+            (donation-amount (/ (* price (var-get donation-percentage)) u100))
+            (seller-amount (- price donation-amount))
+        )
+        (begin
+            (asserts! (not (var-get paused)) err-invalid-price)
+            (asserts! (>= (stx-get-balance tx-sender) price) err-insufficient-funds)
+            
+            ;; Transfer payment to seller
+            (unwrap! (stx-transfer? seller-amount tx-sender owner) err-insufficient-funds)
+            
+            ;; Transfer donation to charity
+            (unwrap! (stx-transfer? donation-amount tx-sender (var-get charity-address)) err-insufficient-funds)
+            
+            ;; Transfer NFT ownership
+            (unwrap! (transfer-token token-id owner tx-sender) err-not-token-owner)
+            
+            ;; Cleanup and update state
+            (map-delete nft-price token-id)
+            (var-set total-donations (+ (var-get total-donations) donation-amount))
+            (ok true)
+        )
+    )
+)
+
+;; Administrative functions
+(define-public (set-charity-address (new-address principal))
+    (begin
+        (asserts! (is-eq tx-sender contract-owner) err-owner-only)
+        (var-set charity-address new-address)
+        (ok true)
+    )
+)
+
+(define-public (set-donation-percentage (new-percentage uint))
+    (begin
+        (asserts! (is-eq tx-sender contract-owner) err-owner-only)
+        (asserts! (<= new-percentage u100) (err u104))
+        (var-set donation-percentage new-percentage)
+        (ok true)
+    )
+)
+
+(define-public (toggle-pause)
+    (begin
+        (asserts! (is-eq tx-sender contract-owner) err-owner-only)
+        (var-set paused (not (var-get paused)))
+        (ok true)
+    )
+)
